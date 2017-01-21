@@ -1,0 +1,46 @@
+#!/bin/bash
+
+set -e
+
+exec 3>&1 # make stdout available as fd 3 for the result
+exec 1>&2 # redirect all output to stderr for logging
+
+PATH=/usr/local/bin:$PATH
+
+OMNITRUCK="https://omnitruck.chef.io"
+
+load_latest_version(){
+  local url="$OMNITRUCK/$channel/$product/metadata"
+  local query="p=$platform&pv=$platform_version&m=$architecture"
+  metadata=$(curl "$url?$query")
+  version=$(echo "$metadata" | grep version | cut -f 2)
+  checksum=$(echo "$metadata" | grep sha256 | cut -f 2)
+  download=$(echo "$metadata" | grep url | cut -f 2)
+}
+
+main(){
+  payload=$(mktemp /tmp/resource-in.XXXXXX)
+  cat > $payload <&0
+  channel=$(jq -r '.source.channel // ""' < $payload)
+  product=$(jq -r '.source.product // ""' < $payload)
+  platform=$(jq -r '.source.channel // ""' < $payload)
+  platform_version=$(jq -r '.source.platform_version // ""' < $payload)
+  architecture=$(jq -r '.source.architecture // ""' < $payload)
+  version=$(jq -r '.version.version // ""' < $payload)
+
+  if [ -z "$version" ]; then
+    load_latest_version
+  fi
+
+  jq -n "{
+    version: {
+      version: $(echo $version | jq -R . )
+    },
+    metadata: [
+      { name: \"sha256\", value: $(echo $checksum | jq -R . )},
+      { name: \"url\", value: $(echo $download | jq -R . )}
+    ]
+  }" >&3
+}
+
+main
