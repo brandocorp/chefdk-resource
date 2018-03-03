@@ -12,12 +12,12 @@ OMNITRUCK="https://omnitruck.chef.io"
 download_version(){
   local url="$OMNITRUCK/$channel/$product/metadata"
   local query="v=$version&p=$platform&pv=$platform_version&m=$architecture"
-  metadata=$(curl "$url?$query")
+  metadata=$(curl -s "$url?$query")
   version=$(echo "$metadata" | grep version | cut -f 2)
   checksum=$(echo "$metadata" | grep sha256 | cut -f 2)
   download=$(echo "$metadata" | grep url | cut -f 2)
 
-  curl -LOJ "$download"
+  curl -C- -sLOJ "$download"
 }
 
 main(){
@@ -33,7 +33,7 @@ main(){
 
   download_version
 
-  jq -n "{
+  jq -M -n "{
     version: {
       release: $(echo $version | jq -R . )
     },
