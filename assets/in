@@ -25,18 +25,17 @@ main(){
   payload=$(mktemp /tmp/resource-in.XXXXXX)
   cat > $payload <&0
   channel=$(jq -r '.source.channel // ""' < $payload)
-  product=$(jq -r '.source.product // ""' < $payload)
-  platform=$(jq -r '.source.channel // ""' < $payload)
+  product="chefdk"
+  platform=$(jq -r '.source.platform // ""' < $payload)
   platform_version=$(jq -r '.source.platform_version // ""' < $payload)
   architecture=$(jq -r '.source.architecture // ""' < $payload)
-  version=$(jq -r '.version.version // ""' < $payload)
+  version=$(jq -r '.version.release // ""' < $payload)
 
-  cd destination
   download_version
 
   jq -n "{
     version: {
-      version: $(echo $version | jq -R . )
+      release: $(echo $version | jq -R . )
     },
     metadata: [
       { name: \"sha256\", value: $(echo $checksum | jq -R . )},

@@ -12,7 +12,7 @@ OMNITRUCK="https://omnitruck.chef.io"
 load_version(){
   local target=$1
   local url="$OMNITRUCK/$channel/$product/metadata"
-  local query="v=$target&p=$platform&pv=$platform_version&m=$architecture"
+  local query="v=$version&p=$platform&pv=$platform_version&m=$architecture"
   metadata=$(curl "$url?$query")
   version=$(echo "$metadata" | grep version | cut -f 2)
   checksum=$(echo "$metadata" | grep sha256 | cut -f 2)
@@ -22,12 +22,12 @@ load_version(){
 main(){
   payload=$(mktemp /tmp/resource-in.XXXXXX)
   cat > $payload <&0
+  product="chefdk"
   channel=$(jq -r '.source.channel // ""' < $payload)
-  product=$(jq -r '.source.product // ""' < $payload)
-  platform=$(jq -r '.source.channel // ""' < $payload)
+  platform=$(jq -r '.source.platform // ""' < $payload)
   platform_version=$(jq -r '.source.platform_version // ""' < $payload)
   architecture=$(jq -r '.source.architecture // ""' < $payload)
-  version=$(jq -r '.version.version // ""' < $payload)
+  version=$(jq -r '.version.release // ""' < $payload)
 
   if [ -z "$version" ]; then
     load_version 'latest'
@@ -35,7 +35,7 @@ main(){
     load_version $version
   fi
 
-  jq -n "[{version: $(echo $version | jq -R . )}]" >&3
+  jq -n "[{release: $(echo $version | jq -R . )}]" >&3
 }
 
 main
